@@ -2,7 +2,8 @@ module Parser.Tape
   ( Cell
   , Tape
   , value
-  , current
+  , setCurrent
+  , getCurrent
   , moveLeft
   , moveRight
   , increment
@@ -31,16 +32,16 @@ data Tape =
 
 instance Show Tape where
   show (Tape left current right) =
-    (show left) ++ " " ++ (show current) ++ " " ++ (show right)
+    (show $ reverse left) ++ " " ++ (show current) ++ " " ++ (show right)
 
-moveLeft :: Tape -> Tape
-moveLeft cell = Tape newLeft newCurrent newRight
+moveRight :: Tape -> Tape
+moveRight cell = Tape newLeft newCurrent newRight
   where
     newLeft = (current cell) `append` (left cell)
     (newCurrent, newRight) = top $ right cell
 
-moveRight :: Tape -> Tape
-moveRight cell = Tape newLeft newCurrent newRight
+moveLeft :: Tape -> Tape
+moveLeft cell = Tape newLeft newCurrent newRight
   where
     newRight = (current cell) `append` (right cell)
     (newCurrent, newLeft) = top $ left cell
@@ -53,6 +54,12 @@ increment (Tape left current right) = Tape left (add current) right
 
 decrement :: Tape -> Tape
 decrement (Tape left current right) = Tape left (substract current) right
+
+setCurrent :: Tape -> Int -> Tape
+setCurrent (Tape left _ right) value = Tape left (Cell value) right
+
+getCurrent :: Tape -> Int
+getCurrent = value . current
 
 top :: Cells -> (Cell, Cells)
 top []     = (Cell 0, [])
