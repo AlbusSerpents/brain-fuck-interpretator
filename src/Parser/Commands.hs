@@ -6,6 +6,7 @@ module Parser.Commands
 
 import           Control.Lens
 import           Control.Lens.Tuple
+import           Control.Monad.Trans.Writer
 import           Parser.Tape
 
 data Command
@@ -22,21 +23,33 @@ data Command
       }
   deriving (Show, Eq)
 
-type Result = ([Int], [Tape], Tape)
+type Result = ([Int], Tape)
 
-execute :: [Command] -> Result
-execute = foldl executeCommand ([], [], newTape)
+type Parser = Writer [Tape] Result
+
+execute :: [Command] -> (Result, [Tape])
+execute = completeParse . foldl parseCommand newParser
+  where
+    completeParse = over _2 reverse . applyLast . runWriter
+    newParser = return ([], newTape)
+    applyLast (result, history) = (result, (result ^. _2) : history)
+
+parseCommand :: Parser -> Command -> Parser
+parseCommand resultWriter command =
+  mapWriter
+    (\(result, w) -> (executeCommand result command, (result ^. _2) : w))
+    resultWriter
 
 executeCommand :: Result -> Command -> Result
-executeCommand (vs, h, tape) MoveLeft = (vs, tape : h, moveLeft tape)
-executeCommand (vs, h, tape) MoveRight = (vs, tape : h, moveRight tape)
-executeCommand (vs, h, tape) Incr = (vs, tape : h, increment tape)
-executeCommand (vs, h, tape) Decr = (vs, tape : h, decrement tape)
-executeCommand (vs, h, tape) Write = ((getCurrent tape) : vs, tape : h, tape)
-executeCommand (vs, h, tape) (Read v) = (vs, tape : h, setCurrent tape v)
-executeCommand (vs, h, tape) loop@(Loop commands) =
-  if (getCurrent $ next ^. _3) == 0
+executeCommand (vs, tape) MoveLeft = (vs, moveLeft tape)
+executeCommand (vs, tape) MoveRight = (vs, moveRight tape)
+executeCommand (vs, tape) Incr = (vs, increment tape)
+executeCommand (vs, tape) Decr = (vs, decrement tape)
+executeCommand (vs, tape) Write = ((getCurrent tape) : vs, tape)
+executeCommand (vs, tape) (Read v) = (vs, setCurrent tape v)
+executeCommand (vs, tape) loop@(Loop commands) =
+  if (getCurrent $ next ^. _2) == 0
     then next
     else executeCommand next loop
   where
-    next = foldl executeCommand (vs, tape : h, tape) commands
+    next = foldl executeCommand (vs, tape) commands

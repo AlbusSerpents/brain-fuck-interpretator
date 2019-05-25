@@ -25,6 +25,7 @@ dependencies:
   - aeson
   - aws-lambda-haskell-runtime
   - lens
+  - transformers
 
 library:
   source-dirs: src
