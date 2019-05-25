@@ -5,7 +5,6 @@ module Parser.Commands
   ) where
 
 import           Control.Lens
-import           Control.Lens.Tuple
 import           Control.Monad.Trans.Writer
 import           Parser.Tape
 
